@@ -2,21 +2,21 @@ import os
 import asyncio
 import discord
 from discord.ext import commands, tasks
-from mcstatus import JavaServer
 from dotenv import load_dotenv
 from datetime import datetime
-import requests
+from google.cloud import compute_v1
+from google.oauth2 import service_account
+from utils import is_admin, get_player_count, start_vm, stop_vm, stop_mc_server, get_vm_status
+import aiohttp 
+
 
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
-CRAFTY_TOKEN = os.getenv('CRAFTY_TOKEN')
-SERVER_IP = os.getenv('SERVER_IP')
-SERVER_ID = os.getenv('SERVER_ID')
-ADMIN_ID = [int(rid.strip()) for rid in os.getenv("ADMIN_ID").split(",")]
+
+
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='$', intents=intents)
-
 empty_time = None
 trigger_shutdown = False
 
@@ -25,16 +25,6 @@ async def on_ready():
     print(f'Logged in as {bot.user}')
     check_server.start()
 
-@bot.command()
-async def ping(ctx):
-    await ctx.reply("pong")
-
-@bot.command()
-async def josh(ctx):
-    await ctx.reply("is dumass")
-
-def is_admin(ctx):
-    return any(role.id in ADMIN_ID for role in ctx.author.roles)
 
 @bot.command()
 async def start(ctx):
@@ -42,7 +32,8 @@ async def start(ctx):
         await ctx.reply("You can’t use this command!")
         return
     await ctx.reply("Starting Minecraft server")
-    await start_server()
+    await start_vm()
+    await ctx.reply("Vm has started. Get in losers mc server is starting")
 
 @bot.command()
 async def stop(ctx):
@@ -51,16 +42,19 @@ async def stop(ctx):
         return
     await ctx.reply("Stopping Minecraft server")
     await shutdown_server(manual=True)
+    
 
-@tasks.loop(seconds=1)
+@tasks.loop(seconds=10)
 async def check_server():
     global empty_time, trigger_shutdown
-    try:
-        server = JavaServer.lookup(SERVER_IP)
-        status = server.status()
-        player_count = status.players.online
-        print(f'Players online: {player_count}')
+    status = await get_vm_status()    
 
+    if status == "RUNNING":
+        player_count = await get_player_count()
+        if player_count is None:
+            return 
+
+        print(f'Players online: {player_count}')
         if player_count == 0:
             if empty_time is None:
                 empty_time = datetime.now()
@@ -72,29 +66,30 @@ async def check_server():
         else:
             empty_time = None
             trigger_shutdown = False
-    except Exception as e:
-        print(f'Error checking server status: {e}')
+    else:
+        print("Server is off")
+
 
 async def shutdown_server(manual=False):
-    headers = {"Authorization": f"{CRAFTY_TOKEN}","Content-Type": "application/json"}
-    channel = discord.utils.get(bot.get_all_channels(), name='dev-chat')
+    channel = discord.utils.get(bot.get_all_channels(), name='minecraft-chat')
     if channel:
         if manual:
             await channel.send('Server stop command received from admin. Stopping Minecraft server...')
-            await requests.post(f"https://pesu-mc.ddns.net:8443/api/v2/servers/{SERVER_ID}/action/stop_server", headers=headers, verify=False)
         else:
             await channel.send('Server has been empty for 1 minute. Initiating automatic shutdown sequence.')
-            await requests.post(f"https://pesu-mc.ddns.net:8443/api/v2/servers/{SERVER_ID}/action/stop_server", headers=headers, verify=False)
-    print('Shutting down server...')
+        await stop_mc_server()
+        await channel.send("Server stopped. Turning off vm now")
+        await stop_vm()
+        await channel.send("Vm has been turned off")
     
 
-async def start_server(manual=True):
-    headers = {"Authorization": f"{CRAFTY_TOKEN}","Content-Type": "application/json"}
-    channel = discord.utils.get(bot.get_all_channels(), name='dev-chat')
-    if channel:
-        if manual:
-            await channel.send('get in losers mc server is starting')
-            await requests.post(f"https://pesu-mc.ddns.net:8443/api/v2/servers/{SERVER_ID}/action/start_server", headers=headers, verify=False)
+@bot.command()
+async def ping(ctx):
+    await ctx.reply("pong")
+
+@bot.command()
+async def josh(ctx):
+    await ctx.reply("is dumass")
 
 
 bot.run(BOT_TOKEN)
