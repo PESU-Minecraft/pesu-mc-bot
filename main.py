@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 import discord
 from discord.ext import commands, tasks
-from datetime import datetime
+from datetime import datetime, timezone
 
 from utils import is_admin, get_player_count, start_vm, stop_vm, stop_mc_server, get_vm_status
 from webserver import run_webserver
@@ -19,6 +19,87 @@ bot = commands.Bot(command_prefix='$', intents=intents)
 empty_time = None
 trigger_shutdown = False
 
+CLOCK = "<a:Minecraft_clock:1462830831092498671>"
+PARROT = "<a:dancing_parrot:1462833253692997797>"
+CHEST = "<a:MinecraftChestOpening:1462837623625355430>"
+TNT = "<a:TNT:1462841582376980586>"
+FLAME = "<a:animated_flame:1462846702191907013>"
+SAD = "<:jeb_screm:1462848647149519145>"
+
+def embed_starting():
+    return discord.Embed(
+        title=f"{CLOCK} Starting PESU Minecraft Server",
+        description=(
+            "Your beloved server is booting up!\n\n"
+            f"This may take a while {PARROT}"
+        ),
+        color=discord.Color.blue(),
+        timestamp=datetime.now(timezone.utc)
+    ).set_footer(text="Xymic")\
+     .set_thumbnail(url="https://images-ext-1.discordapp.net/external/7nIEsery5zNVdedxw1ZE4KbpDsdbynTfKfBiVvBxH4k/%3Fsize%3D4096/https/cdn.discordapp.com/icons/1406919525831540817/0c5be54039c065ad713c2e60cdcf1d3d.png?format=webp&quality=lossless&width=579&height=579")
+
+def embed_started():
+    return discord.Embed(
+        title="✅ Server Online",
+        description=(
+            
+            f"Get in losers - the server is going live! {CHEST}"
+        ),
+        color=discord.Color.green(),
+        timestamp=datetime.now(timezone.utc)
+    ).set_footer(text="Xymic")
+
+def embed_manual_stop():
+    return discord.Embed(
+        title=f"{TNT} Server Shutdown Requested",
+        description=(
+            "The Minecraft server is now shutting down.\n"
+        ),
+        color=discord.Color.orange(),
+        timestamp=datetime.now(timezone.utc)
+    ).set_footer(text="Xymic")
+
+def embed_auto_shutdown():
+    return discord.Embed(
+        title=f"{SAD} Server Idle",
+        description=(
+            "The server has been empty for **1 hour**.\n"
+            "Initiating automatic shutdown sequence…"
+        ),
+        color=discord.Color.gold(),
+        timestamp=datetime.now(timezone.utc)
+    ).set_footer(text="Xymic")
+
+def embed_stopped():
+    return discord.Embed(
+        title="❌ Server Stopped",
+        description=(
+            "The Minecraft server has been stopped successfully.\n\n"
+            f"{FLAME} The VM is now powering off to save resources."
+        ),
+        color=discord.Color.red(),
+        timestamp=datetime.now(timezone.utc)
+    ).set_footer(text="Xymic")\
+     .set_thumbnail(url="https://images-ext-1.discordapp.net/external/7nIEsery5zNVdedxw1ZE4KbpDsdbynTfKfBiVvBxH4k/%3Fsize%3D4096/https/cdn.discordapp.com/icons/1406919525831540817/0c5be54039c065ad713c2e60cdcf1d3d.png?format=webp&quality=lossless&width=579&height=579")
+
+def embed_no_permission():
+    return discord.Embed(
+        title="🚫 Permission Denied",
+        description=(
+            "You don’t have permission to use this command.\n\n"
+            "🔐 This action is restricted to server admins only."
+        ),
+        color=discord.Color.dark_red(),
+        timestamp=datetime.now(timezone.utc)
+    ).set_footer(text="Xymic")
+
+def embed_vm_stop():
+    return discord.Embed(
+        title="The VM has been stopped.",
+        color=discord.Color.red(),
+        timestamp=datetime.now(timezone.utc)
+).set_footer(text="Xymic")
+
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user}')
@@ -28,18 +109,18 @@ async def on_ready():
 @bot.command()
 async def start(ctx):
     if not is_admin(ctx):
-        await ctx.reply("You can’t use this command!")
+        await ctx.reply(embed=embed_no_permission())
         return
-    await ctx.reply("Starting Minecraft server")
+    await ctx.reply(embed=embed_starting())
     await start_vm()
-    await ctx.reply("Vm has started. Get in losers mc server is starting")
+    await ctx.reply(embed=embed_started())
 
 @bot.command()
 async def stop(ctx):
     if not is_admin(ctx):
-        await ctx.reply("You can’t use this command!")
+        await ctx.reply(embed=embed_no_permission())
         return
-    await ctx.reply("Stopping Minecraft server")
+    await ctx.reply(embed=embed_manual_stop())
     await shutdown_server(manual=True)
     
 
@@ -73,13 +154,13 @@ async def shutdown_server(manual=False):
     channel = discord.utils.get(bot.get_all_channels(), name='minecraft-chat')
     if channel:
         if manual:
-            await channel.send('Server stop command received from admin. Stopping Minecraft server...')
+            await channel.send(embed=embed_manual_stop())
         else:
-            await channel.send('Server has been empty for 1 minute. Initiating automatic shutdown.')
+            await channel.send(embed=embed_auto_shutdown())
         await stop_mc_server()
-        await channel.send("Server stopped. Turning off vm now")
+        await channel.send(embed=embed_stopped())
         await stop_vm()
-        await channel.send("Vm has been turned off")
+        await channel.send(embed=embed_vm_stop())
 
 
 
