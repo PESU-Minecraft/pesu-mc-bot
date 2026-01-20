@@ -10,13 +10,24 @@ from webserver import run_webserver
 
 import threading
 
+import socket
+import aiohttp
+
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 
+class IPv4Bot(commands.Bot):
+    async def setup_hook(self):
+        connector = aiohttp.TCPConnector(
+            family=socket.AF_INET
+        )
+        self.http._HTTPClient__session = aiohttp.ClientSession(
+            connector=connector
+        )
 
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix='$', intents=intents)
+bot = IPv4Bot(command_prefix='$', intents=intents)
 empty_time = None
 trigger_shutdown = False
 
