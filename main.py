@@ -154,7 +154,8 @@ async def shutdown_server(manual=False):
     channel = discord.utils.get(bot.get_all_channels(), name='minecraft-chat')
     if channel:
         if manual:
-            await channel.send(embed=embed_manual_stop())
+            pass
+            # await channel.send(embed=embed_manual_stop())
         else:
             await channel.send(embed=embed_auto_shutdown())
         await stop_mc_server()
