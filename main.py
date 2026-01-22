@@ -307,7 +307,7 @@ async def stats(ctx, mode=None, player=None):
     - If the mode is `server`, call stats_server
     - If the mode is player, call stats_player
 
-    Args:
+    Arguments:
         ctx: Message object
         mode: Whether to get server information or induvidual player information
         player: The player for which information is to be retreived.
@@ -334,7 +334,7 @@ async def graph(ctx, metric=None, minutes=60):
     Bot command definition for `graph`. Parses user command and returns
     matplotlib graph as a file attachment and deletes the file once sent to the user.
 
-    Args:
+    Arguments:
         ctx: Message object
         metric: CPU, RAM, CHUNKS, JOINS, DEATHS or PLAYERS
         minutes: The amount of time to get datapoints for relative to current time.
@@ -390,7 +390,7 @@ async def stats_server(ctx):
     Fetches the server statistics from MongoDB. Constructs discord embed and
     returns to message as reply.
 
-    Args:
+    Arguments:
         ctx: Message object
     """
     doc = server_metrics.find_one(sort=[("timestamp", -1)])
@@ -456,7 +456,7 @@ async def stats_player(ctx, username):
     STACK: Stats
     Fetches induvidual player statistics based on username from the DB.
 
-    Args:
+    Arguments:
         ctx: Message object
         username: Username of the player in the server.
     """
@@ -466,29 +466,53 @@ async def stats_player(ctx, username):
         await ctx.reply("Player not found.")
         return
 
+    online = doc.get("online", False)
+
     embed = discord.Embed(
-        title=f"Player Stats – {doc['name']}",
-        color=discord.Color.green() if doc.get("online") else discord.Color.red(),
+        title=f"Player Stats: {doc.get('name', 'Unknown')}",
+        color=discord.Color.green() if online else discord.Color.red(),
         timestamp=datetime.now(timezone.utc),
     )
 
     embed.add_field(
         name="Status",
-        value=f"{GREEN_DOT} Online" if doc.get("online") else f"{RED_DOT} Offline",
+        value=f"{GREEN_DOT} Online" if online else f"{RED_DOT} Offline",
         inline=True,
     )
     embed.add_field(
-        name="Playtime", value=format_duration(doc["total_playtime_ms"]), inline=True
+        name="Playtime",
+        value=format_duration(doc.get("total_playtime_ms", 0)),
+        inline=True,
     )
-    embed.add_field(name="Total Joins", value=doc["total_joins"])
-    embed.add_field(name="Deaths", value=doc["total_deaths"])
-    embed.add_field(name="Player Kills", value=doc["player_kills"])
-    embed.add_field(name="Mob Kills", value=doc["mob_kills"])
-    embed.add_field(name="Messages", value=doc["messages_sent"])
-    embed.add_field(name="Advancements", value=doc["advancement_count"])
-    embed.add_field(name="First Join", value=f"<t:{doc['first_join_ts']//1000}:R>")
-    embed.add_field(name="Last Seen", value=f"<t:{doc['last_seen_ts']//1000}:R>")
+    embed.add_field(name="Total Joins", value=doc.get("total_joins", 0), inline=True)
+    embed.add_field(name="Deaths", value=doc.get("total_deaths", 0), inline=True)
+    embed.add_field(name="Player Kills", value=doc.get("player_kills", 0), inline=True)
+    embed.add_field(name="Mob Kills", value=doc.get("mob_kills", 0), inline=True)
+    embed.add_field(name="Messages", value=doc.get("messages_sent", 0), inline=True)
+    embed.add_field(
+        name="Advancements", value=doc.get("advancement_count", 0), inline=True
+    )
+    first_join = doc.get("first_join_ts")
+    last_seen = doc.get("last_seen_ts")
+    embed.add_field(
+        name="First Join",
+        value=(
+            f"<t:{first_join // 1000}:R>"
+            if isinstance(first_join, int) and first_join > 0
+            else "-"
+        ),
+        inline=True,
+    )
 
+    embed.add_field(
+        name="Last Seen",
+        value=(
+            f"<t:{last_seen // 1000}:R>"
+            if isinstance(last_seen, int) and last_seen > 0
+            else "-"
+        ),
+        inline=True,
+    )
     await ctx.reply(embed=embed)
 
 
@@ -497,7 +521,7 @@ async def shutdown_server(manual=False):
     STACK: Server control
     Shuts down the minecraft server.
 
-    Args:
+    Arguments:
         manual: Whether the shutdown was manual or automatic (by polling).
     """
     channel = discord.utils.get(bot.get_all_channels(), name="minecraft-chat")
