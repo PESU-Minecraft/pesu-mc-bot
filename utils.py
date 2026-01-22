@@ -5,8 +5,8 @@ from mcstatus import JavaServer
 import asyncio
 import os
 
-# from google.cloud import compute_v1
-# from google.oauth2 import service_account
+from google.cloud import compute_v1
+from google.oauth2 import service_account
 import json
 import base64
 import aiohttp
@@ -28,9 +28,9 @@ GOOGLE_SERVICE_ACCOUNT_BASE64 = os.getenv("GOOGLE_SERVICE_ACCOUNT_BASE64")
 CRAFTY_TOKEN = os.getenv("CRAFTY_TOKEN")
 
 
-# key_json = json.loads(base64.b64decode(GOOGLE_SERVICE_ACCOUNT_BASE64))
-# credentials = service_account.Credentials.from_service_account_info(key_json)
-# instances_client = compute_v1.InstancesClient(credentials=credentials)
+key_json = json.loads(base64.b64decode(GOOGLE_SERVICE_ACCOUNT_BASE64))
+credentials = service_account.Credentials.from_service_account_info(key_json)
+instances_client = compute_v1.InstancesClient(credentials=credentials)
 
 
 def is_admin(ctx):

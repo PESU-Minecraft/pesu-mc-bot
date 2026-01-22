@@ -203,7 +203,7 @@ async def on_ready():
     Login acknowledgement and start timers for `check_server`
     """
     print(f"[DISCORD BOT] Logged in as {bot.user}")
-    # check_server.start()
+    check_server.start()
 
 
 @bot.event
@@ -434,8 +434,8 @@ async def stats_server(ctx):
         )
         await ctx.reply(embed=embed)
 
-    # status = await get_vm_status()
-    status = "RUNNING"  # DEBUG/TESTING
+    status = await get_vm_status()
+    # status = "RUNNING"  # DEBUG/TESTING
     offline = status != "RUNNING"
 
     embed = discord.Embed(
@@ -527,9 +527,9 @@ async def stats_player(ctx, username):
     if not doc:
         await ctx.reply("Player not found.")
         return
-    # status = await get_vm_status() == "RUNNING"
-    # online = bool(doc.get("online", False)) & status
-    online = bool(doc.get("online", False)) & True  # DEBUG/TESTING
+    status = await get_vm_status() == "RUNNING"
+    online = bool(doc.get("online", False)) & status
+    # online = bool(doc.get("online", False)) & True  # DEBUG/TESTING
     embed = discord.Embed(
         title=f"Player Stats: {doc.get('name', 'Unknown')}",
         color=discord.Color.green() if online else discord.Color.red(),
