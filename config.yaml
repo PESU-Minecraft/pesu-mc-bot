@@ -5,8 +5,7 @@ gcp:
 
 crafty:
   SERVER_ID: "ec8f65f2-689d-4806-9f87-658490dceaa9"
-  SERVER_IP: "localhost"
-  # SERVER_IP: "pesu-mc.ddns.net"
+  SERVER_IP: "pesu-mc.ddns.net"
 
 bot:
   ADMIN_ID: "1456845605476368598,1456845605476368598"
