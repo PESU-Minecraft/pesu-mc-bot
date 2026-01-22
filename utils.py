@@ -66,7 +66,7 @@ async def get_player_count():
     except TimeoutError:
         pass
     except Exception as e:
-        print(f"Error checking server status: {e}")
+        print(f"[SERVER CONTROL] Error checking server status: {e}")
         return None
 
 
@@ -75,12 +75,12 @@ async def start_vm():
     STACK: VM control
     Starts the virtual machine on Google cloud.
     """
-    print(f"Starting {INSTANCE_NAME}")
+    print(f"[VM CONTROL] Starting {INSTANCE_NAME}")
     operation = instances_client.start(
         project=PROJECT_ID, zone=ZONE, instance=INSTANCE_NAME
     )
     operation.result()
-    print("VM started")
+    print("[VM CONTROL] VM started")
 
 
 async def stop_vm():
@@ -88,7 +88,7 @@ async def stop_vm():
     STACK: VM control
     Stops the virtual machine on Google cloud.
     """
-    print(f"Stopping {INSTANCE_NAME}...")
+    print(f"[VM CONTROL] Stopping {INSTANCE_NAME}...")
 
     def send_command():
         operation = instances_client.stop(
@@ -97,7 +97,7 @@ async def stop_vm():
         operation.result()
 
     result = await asyncio.to_thread(send_command)
-    print("VM stopped.")
+    print("[VM CONTROL] VM stopped.")
 
 
 async def get_vm_status():
@@ -121,9 +121,11 @@ async def stop_mc_server():
     async with aiohttp.ClientSession() as session:
         async with session.post(url, headers=headers, ssl=False) as resp:
             text = await resp.text()
-            print(f"[Shutdown] Response {resp.status}: {text}")
+            print(f"[SERVER CONTROL] Shutdown Response {resp.status}: {text}")
             if resp.status != 200:
-                raise Exception(f"Failed to shut down server: {resp.status}")
+                raise Exception(
+                    f"[SERVER CONTROL] Failed to shutdown server: {resp.status}"
+                )
 
 
 def format_duration(ms):
@@ -141,3 +143,42 @@ def format_duration(ms):
     m = (seconds % 3600) // 60
     s = seconds % 60
     return f"{h:02d}h {m:02d}m {s:02d}s"
+
+
+def gb(v):
+    """
+    STACK: Formatting / Stats
+    Convert bytes to gigabytes
+
+    Args:
+        v: Value to convert
+
+    Returns:
+        str: <value in gb> GB
+    """
+    return f"{v / (1024**3):.2f} GB"
+
+
+async def ping_stats(player_uuid: str | None = None):
+    STATS_TOKEN = os.getenv("STATS_TOKEN")
+    STATS_ENDPOINT = "http://" + SERVER_IP + "/mc/stats"
+    headers = {"x-stats-token": STATS_TOKEN}
+
+    params = {}
+    if player_uuid:
+        params["player"] = player_uuid
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                STATS_ENDPOINT,
+                headers=headers,
+                params=params,
+                timeout=aiohttp.ClientTimeout(total=2),
+            ) as resp:
+                await resp.text()
+    except (aiohttp.ClientConnectorError, asyncio.TimeoutError):
+        return False
+    except Exception as e:
+        print(f"[STATS] Ping failed: {type(e).__name__}")
+        return False

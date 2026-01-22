@@ -9,3 +9,4 @@ db = client[MONGO_DB]
 
 server_metrics = db.server_metrics
 players = db.players
+duels_db = db.duels
