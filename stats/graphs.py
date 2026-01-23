@@ -1,5 +1,5 @@
 from stats.mongo import server_metrics
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import time
 import math
