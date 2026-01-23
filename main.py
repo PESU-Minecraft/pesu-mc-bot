@@ -647,19 +647,29 @@ async def duels(ctx, username: str = None):
         timestamp=datetime.now(timezone.utc),
     )
 
-    wins = doc.get("wins", 0)
-    losses = doc.get("losses", 0)
-    total = doc.get("total_matches", 0)
+    wins = int(doc.get("wins", 0))
+    losses = int(doc.get("losses", 0))
+    total = int(doc.get("total_matches", wins + losses))
 
-    embed.add_field(name="Wins", value=wins, inline=True)
-    embed.add_field(name="Losses", value=losses, inline=True)
+    win_rate = (wins / total * 100) if total > 0 else 0.0
+
     embed.add_field(
-        name="Win Rate",
-        value=f"{(wins / total * 100):.1f}%" if total else "0%",
+        name="Duels Record",
+        value=f"**{wins}W / {losses}L**",
         inline=True,
     )
 
-    embed.add_field(name="Total Matches", value=total, inline=True)
+    embed.add_field(
+        name="Win Rate",
+        value=f"**{win_rate:.1f}%**",
+        inline=True,
+    )
+
+    embed.add_field(
+        name="Total Matches",
+        value=f"**{total}**",
+        inline=True,
+    )
 
     # FIX LATER WHEN API IS INTRODUCED FOR DUELS
     # last_match = doc.get("last_match_ts", 0)
@@ -669,40 +679,21 @@ async def duels(ctx, username: str = None):
     #     inline=True,
     # )
 
-    embed.add_field(name="\u200b", value="\u200b", inline=True)
+    rating = doc.get("rating") or {}
 
-    rating = doc.get("rating", {})
     if rating:
+        rating_lines = [
+            f"**{mode}**: `{value}`" for mode, value in sorted(rating.items())
+        ]
+
         embed.add_field(
             name="Ratings",
-            value="\n".join(f"**{k}**: {v}" for k, v in rating.items()),
+            value="\n".join(rating_lines),
             inline=False,
         )
 
-    kits = doc.get("kits", {})
-    if kits:
-        kit_lines = []
-        for kit, k in kits.items():
-            kit_lines.append(
-                f"**{kit}** — {k.get('wins',0)}W / {k.get('losses',0)}L "
-                f"({k.get('played',0)} games)\n"
-                f"Avg: {int(k.get('avg_duration_ms',0)/1000)}s"
-            )
+    embed.set_footer(text="Duels stats are synced periodically from the server.")
 
-        embed.add_field(
-            name="Kit Breakdown",
-            value="\n\n".join(kit_lines),
-            inline=False,
-        )
-
-    embed.add_field(
-        name="Duels",
-        value=f"{doc.get("wins")}W / {doc.get("losses")}L",
-        inline=True,
-    )
-    embed.set_footer(
-        text="If the stats shown above are not asper expectation, consider rejoining the server."
-    )
     await ctx.reply(embed=embed)
 
 
