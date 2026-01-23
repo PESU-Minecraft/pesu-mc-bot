@@ -359,15 +359,16 @@ async def graph(ctx, metric=None, minutes=60):
         await ctx.reply(
             "Usage: `$graph <metric> [minutes]`\n\n"
             "**Available metrics:**\n"
-            "`players`          : Players online\n"
-            "`cpu_sys` or `cpu` : System CPU %\n"
-            "`cpu_jvm`          : JVM CPU %\n"
-            "`ram_sys` or `ram` : System RAM used (GB)\n"
-            "`ram_jvm`          : JVM RSS (GB)\n"
-            "`heap`             : JVM heap used (GB)\n"
-            "`chunks`           : Loaded chunks\n"
-            "`joins`            : Total joins\n"
-            "`deaths`           : Total deaths\n\n"
+            "`players`              : Players online\n"
+            "`cpu_sys`              : System CPU %\n"
+            "`cpu_jvm`              : JVM CPU %\n"
+            "`ram_sys`              : System RAM used (GB)\n"
+            "`ram_jvm`              : JVM RSS (GB)\n"
+            "`heap`                 : JVM heap used (GB)\n"
+            "`chunks`               : Loaded chunks\n"
+            "`joins`                : Total joins\n"
+            "`uniq_joins`           : Total unique joins\n"
+            "`deaths`               : Total deaths\n\n"
             "Example:\n"
             "`$graph cpu_sys 30`"
         )
@@ -434,7 +435,7 @@ async def stats_server(ctx):
         await ctx.reply(embed=embed)
 
     status = await get_vm_status()
-    # status = "RUNNING" # DEBUG/TESTING
+    # status = "RUNNING"  # DEBUG/TESTING
     offline = status != "RUNNING"
 
     embed = discord.Embed(
@@ -520,13 +521,15 @@ async def stats_player(ctx, username):
     """
     await ping_stats()
     doc = players.find_one({"name": {"$regex": f"^{username}$", "$options": "i"}})
+    true_deaths = doc.get("total_deaths", 0)
+    true_player_kills = doc.get("player_kills", 0)
 
     if not doc:
         await ctx.reply("Player not found.")
         return
     status = await get_vm_status() == "RUNNING"
     online = bool(doc.get("online", False)) & status
-    # online = bool(doc.get("online", False)) & "RUNNING" # DEBUG/TESTING
+    # online = bool(doc.get("online", False)) & True  # DEBUG/TESTING
     embed = discord.Embed(
         title=f"Player Stats: {doc.get('name', 'Unknown')}",
         color=discord.Color.green() if online else discord.Color.red(),
@@ -549,12 +552,12 @@ async def stats_player(ctx, username):
     )
     embed.add_field(
         name="Deaths",
-        value=doc.get("total_deaths", 0),
+        value=f"{true_deaths}",
         inline=True,
     )
     embed.add_field(
         name="Player Kills",
-        value=doc.get("player_kills", 0),
+        value=f"{true_player_kills}",
         inline=True,
     )
     embed.add_field(
@@ -577,6 +580,16 @@ async def stats_player(ctx, username):
     embed.add_field(
         name="Villager Trades",
         value=doc.get("villager_trades", 0),
+        inline=True,
+    )
+    embed.add_field(
+        name="Animals bred",
+        value=doc.get("animals_bred", 0),
+        inline=True,
+    )
+    embed.add_field(
+        name="Advancements",
+        value=doc.get("advancements", 0),
         inline=True,
     )
 
@@ -648,12 +661,13 @@ async def duels(ctx, username: str = None):
 
     embed.add_field(name="Total Matches", value=total, inline=True)
 
-    last_match = doc.get("last_match_ts")
-    embed.add_field(
-        name="Last Match",
-        value=f"<t:{last_match // 1000}:R>" if isinstance(last_match, int) else "-",
-        inline=True,
-    )
+    # FIX LATER WHEN API IS INTRODUCED FOR DUELS
+    # last_match = doc.get("last_match_ts", 0)
+    # embed.add_field(
+    #     name="Last Match",
+    #     value=f"<t:{last_match // 1000}:R>" if last_match <= 0 else "-",
+    #     inline=True,
+    # )
 
     embed.add_field(name="\u200b", value="\u200b", inline=True)
 
@@ -681,6 +695,14 @@ async def duels(ctx, username: str = None):
             inline=False,
         )
 
+    embed.add_field(
+        name="Duels",
+        value=f"{doc.get("wins")}W / {doc.get("losses")}L",
+        inline=True,
+    )
+    embed.set_footer(
+        text="If the stats shown above are not asper expectation, consider rejoining the server."
+    )
     await ctx.reply(embed=embed)
 
 

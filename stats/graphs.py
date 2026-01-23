@@ -3,16 +3,19 @@ from datetime import datetime, timedelta, timezone
 import matplotlib.pyplot as plt
 import time
 import math
+from datetime import timezone
 
 
 DEFAULT_PUSH_INTERVAL_SECONDS = 10
 GAP_MULTIPLIER = 2.2
 
-DARK_BG = "#0f1117"
-AX_BG = "#161b22"
-GRID_COLOR = "#30363d"
-LINE_COLOR = "#58a6ff"
-FILL_COLOR = "#58a6ff"
+DARK_BG = "#0B0B0C"
+AX_BG = "#111113"
+GRID_COLOR = "#26262A"
+LINE_COLOR = "#ff8524"
+FILL_COLOR = "#E97112"
+TEXT_COLOR = "#E6E6E6"
+
 
 BYTES_TO_GB = 1 / (1024**3)
 
@@ -34,8 +37,6 @@ def plot_metric(metric, minutes=60, ylabel=None, scale=1.0, clamp=None):
     """
 
     since = datetime.utcnow() - timedelta(minutes=minutes)
-    # doc = server_metrics.find_one(sort=[("timestamp", -1)])
-    # print(doc.keys())
 
     cursor = server_metrics.find(
         {"timestamp": {"$gte": since}},
@@ -69,6 +70,15 @@ def plot_metric(metric, minutes=60, ylabel=None, scale=1.0, clamp=None):
     if not times:
         return None
 
+    clean_times = []
+    clean_values = []
+    baseline = []
+
+    for t, v in zip(times, values):
+        clean_times.append(t)
+        clean_values.append(v)
+        baseline.append(0.0)
+
     fig, ax = plt.subplots(figsize=(9, 4.5))
     fig.patch.set_facecolor(DARK_BG)
     ax.set_facecolor(AX_BG)
@@ -77,17 +87,20 @@ def plot_metric(metric, minutes=60, ylabel=None, scale=1.0, clamp=None):
         times,
         values,
         color=LINE_COLOR,
-        linewidth=2.2,
+        linewidth=2.8,
         solid_capstyle="round",
+        zorder=3,
     )
 
     ax.fill_between(
         times,
         values,
+        0,
         where=[not math.isnan(v) for v in values],
         color=FILL_COLOR,
-        alpha=0.25,
+        alpha=0.90,
         interpolate=False,
+        zorder=2,
     )
 
     ax.grid(
@@ -95,23 +108,37 @@ def plot_metric(metric, minutes=60, ylabel=None, scale=1.0, clamp=None):
         linestyle="--",
         linewidth=0.6,
         color=GRID_COLOR,
-        alpha=0.6,
+        alpha=0.45,
     )
 
-    ax.set_xlabel("Time", color="white", labelpad=8)
-    ax.set_ylabel(ylabel or _label(metric), color="white", labelpad=8)
+    ax.set_xlabel("Time", color=TEXT_COLOR, labelpad=8)
+    ax.set_ylabel(ylabel or _label(metric), color=TEXT_COLOR, labelpad=8)
 
-    ax.tick_params(colors="white", labelsize=9)
+    ax.tick_params(
+        colors=TEXT_COLOR,
+        labelsize=9,
+        length=0,
+    )
 
     for spine in ax.spines.values():
         spine.set_color(GRID_COLOR)
+        spine.set_linewidth(1.0)
 
     ax.set_title(
-        f"{_label(metric)}: last {minutes} min",
-        color="white",
+        f"{_label(metric)} · last {minutes} min",
+        color=TEXT_COLOR,
         fontsize=12,
         pad=12,
         loc="left",
+        fontweight="bold",
+    )
+
+    ax.plot(
+        times,
+        values,
+        color="#FF8C2A",
+        linewidth=5.0,
+        zorder=1,
     )
 
     plt.tight_layout()
