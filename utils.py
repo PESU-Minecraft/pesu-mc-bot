@@ -122,6 +122,9 @@ async def stop_mc_server():
         async with session.post(url, headers=headers, ssl=False) as resp:
             text = await resp.text()
             print(f"[SERVER CONTROL] Shutdown Response {resp.status}: {text}")
+            if resp.status == 400:
+                print(f"[SERVER CONTROL] Warning: Server already be stopped")
+                return
             if resp.status != 200:
                 raise Exception(
                     f"[SERVER CONTROL] Failed to shutdown server: {resp.status}"
