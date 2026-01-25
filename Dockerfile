@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-FROM python:3.10-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-CMD ["python", "-m","main.py"]
-=======
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 WORKDIR /app
 COPY pyproject.toml uv.lock* ./
@@ -17,4 +9,4 @@ ENV GUNICORN_WORKERS=2
 ENV GUNICORN_THREADS=2
 RUN chmod +x start.sh
 CMD ["./start.sh"]
->>>>>>> 3716ca6 (uv migration and multi-threading support)
+
