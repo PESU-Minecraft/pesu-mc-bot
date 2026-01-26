@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import yaml
+import discord
 
 from mcstatus import JavaServer
 import asyncio
@@ -12,7 +13,10 @@ import base64
 import aiohttp
 
 load_dotenv()
-with open("config.yaml", "r") as f:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_PATH = os.path.join(BASE_DIR, "config.yaml")
+
+with open(CONFIG_PATH, "r") as f:
     config = yaml.safe_load(f)
 
 ADMIN_ID = config["bot"]["ADMIN_ID"].split(",")
@@ -33,7 +37,7 @@ credentials = service_account.Credentials.from_service_account_info(key_json)
 instances_client = compute_v1.InstancesClient(credentials=credentials)
 
 
-def is_admin(ctx):
+def is_admin(interaction: discord.Interaction):
     """
     STACK: Discord permissions
     Check if the user running the command is a verified administrator
@@ -42,9 +46,10 @@ def is_admin(ctx):
     Args:
         ctx: Message object
     """
-    for role in ctx.author.roles:
+    for role in interaction.user.roles:
         if str(role.id) in ADMIN_ID:
             return True
+    return False
 
 
 async def get_player_count():
