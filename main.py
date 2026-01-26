@@ -115,7 +115,7 @@ def embed_auto_shutdown():
     return discord.Embed(
         title=f"{SAD} Server Idle",
         description=(
-            "The server has been empty for **1 minute**.\n"
+            "The server has been empty for **5 minute**.\n"
             "Initiating automatic shutdown sequence…"
         ),
         color=discord.Color.gold(),
@@ -296,7 +296,7 @@ async def check_server():
                 empty_time = datetime.now()
             else:
                 elapsed = (datetime.now() - empty_time).total_seconds()
-                if elapsed >= 60 and not trigger_shutdown:
+                if elapsed >= 300 and not trigger_shutdown:
                     trigger_shutdown = True
                     await shutdown_server()
         else:
