@@ -29,6 +29,17 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="$", intents=intents, help_command=None)
+
+@bot.event
+async def on_command(ctx):
+    await ctx.reply(
+        "⚠️ **Prefix commands are being deprecated.**\n"
+        "Please start using **slash commands** instead.\n\n"
+        "Examples:\n"
+        "`/start`  `/stop`  `/stats`  `/help`",
+        mention_author=False,
+    )
+    
 tree = bot.tree
 empty_time = None
 trigger_shutdown = False
