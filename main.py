@@ -218,15 +218,21 @@ async def on_ready():
     check_server.start()
 
 @bot.event
-async def on_command(ctx):
-    await ctx.reply(
-        "⚠️ **Prefix commands are being deprecated.**\n"
-        "Please start using **slash commands** instead.\n\n"
-        "Examples:\n"
-        "`/start`  `/stop`  `/stats`  `/help`",
-        mention_author=False,
-    )
-    
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    if message.content.startswith("$"):
+        await message.reply(
+            "⚠️ **Prefix commands are being deprecated.**\n"
+            "Please start using **slash commands** instead.\n\n"
+            "Examples:\n"
+            "`/start`  `/stop`  `/stats`  `/help`",
+            mention_author=False,
+        )
+
+    await bot.process_commands(message)
+
 
 @bot.event
 async def on_reaction_add(reaction, user):
