@@ -6,4 +6,4 @@ google-auth
 flask
 pyyaml
 matplotlib
-mongo
+pymongo
