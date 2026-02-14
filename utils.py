@@ -63,7 +63,7 @@ async def get_player_count():
     try:
 
         def query():
-            server = JavaServer.lookup(SERVER_IP)
+            server = JavaServer(SERVER_IP, 25565)
             status = server.status()
             return status.players.online
 
